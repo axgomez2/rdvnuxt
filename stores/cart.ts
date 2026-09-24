@@ -19,9 +19,13 @@ export const useCartStore = defineStore('cart', () => {
   const items = ref<CartItem[]>([])
   const loading = ref(false)
 
-  const count = computed(() => items.value.reduce((sum, item) => sum + item.quantity, 0))
+  const count = computed(() => {
+    if (!Array.isArray(items.value)) return 0
+    return items.value.reduce((sum, item) => sum + item.quantity, 0)
+  })
   
   const total = computed(() => {
+    if (!Array.isArray(items.value)) return 0
     return items.value.reduce((sum, item) => {
       const price = item.vinyl?.price || 0
       return sum + (price * item.quantity)
@@ -49,7 +53,7 @@ export const useCartStore = defineStore('cart', () => {
           Authorization: `Bearer ${authStore.token}`
         }
       })
-      items.value = response.data || []
+      items.value = Array.isArray(response.data) ? response.data : []
     } catch (error) {
       console.error('Error fetching cart:', error)
       items.value = []

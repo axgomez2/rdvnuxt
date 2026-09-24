@@ -17,9 +17,10 @@ export const useWantlistStore = defineStore('wantlist', () => {
   const items = ref<WantlistItem[]>([])
   const loading = ref(false)
 
-  const count = computed(() => items.value.length)
+  const count = computed(() => Array.isArray(items.value) ? items.value.length : 0)
 
   const isInWantlist = (vinylStockId: number) => {
+    if (!Array.isArray(items.value)) return false
     return items.value.some(item => item.vinyl_stock_id === vinylStockId)
   }
 
@@ -40,7 +41,7 @@ export const useWantlistStore = defineStore('wantlist', () => {
           Authorization: `Bearer ${authStore.token}`
         }
       })
-      items.value = response.data || []
+      items.value = Array.isArray(response.data) ? response.data : []
     } catch (error) {
       console.error('Error fetching wantlist:', error)
       items.value = []
