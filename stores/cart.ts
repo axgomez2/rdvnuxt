@@ -54,9 +54,13 @@ export const useCartStore = defineStore('cart', () => {
         }
       })
       items.value = Array.isArray(response.data) ? response.data : []
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching cart:', error)
       items.value = []
+      // Se erro de autenticação, não tentar novamente
+      if (error?.status === 401 || error?.message?.includes('Failed to fetch')) {
+        return
+      }
     } finally {
       loading.value = false
     }

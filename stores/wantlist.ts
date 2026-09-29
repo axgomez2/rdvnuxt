@@ -42,9 +42,12 @@ export const useWantlistStore = defineStore('wantlist', () => {
         }
       })
       items.value = Array.isArray(response.data) ? response.data : []
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching wantlist:', error)
       items.value = []
+      if (error?.status === 401 || error?.message?.includes('Failed to fetch')) {
+        return
+      }
     } finally {
       loading.value = false
     }

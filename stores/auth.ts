@@ -76,23 +76,44 @@ export const useAuthStore = defineStore('auth', () => {
 
   const fetchUser = async () => {
     const config = useRuntimeConfig()
-    const response = await $fetch<User>('/auth/user', {
-      baseURL: config.public.apiBase,
-      headers: {
-        Authorization: `Bearer ${token.value}`
+    try {
+      const response = await $fetch<User>('/auth/user', {
+        baseURL: config.public.apiBase,
+        headers: {
+          Authorization: `Bearer ${token.value}`
+        }
+      })
+      
+      user.value = response
+      return response
+    } catch (error: any) {
+      // Se o token for inválido (401) ou houver redirect, limpar sessão
+      if (error?.status === 401 || error?.response?.status === 401 || error?.message?.includes('Failed to fetch')) {
+        clearSession()
       }
-    })
-    
-    user.value = response
-    return response
+      throw error
+    }
   }
 
-  const initializeAuth = () => {
+  const clearSession = () => {
+    token.value = null
+    user.value = null
+    if (process.client) {
+      localStorage.removeItem('auth_token')
+    }
+  }
+
+  const initializeAuth = async () => {
     if (process.client) {
       const savedToken = localStorage.getItem('auth_token')
       if (savedToken) {
         token.value = savedToken
-        fetchUser()
+        try {
+          await fetchUser()
+        } catch (error) {
+          // Token inválido, já foi limpo no fetchUser
+          console.error('Token inválido, sessão limpa')
+        }
       }
     }
   }
@@ -119,6 +140,7 @@ export const useAuthStore = defineStore('auth', () => {
     fetchUser,
     initializeAuth,
     setToken,
-    setUser
+    setUser,
+    clearSession
   }
 })
