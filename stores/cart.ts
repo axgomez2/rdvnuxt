@@ -171,26 +171,37 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
-  const addItem = async (product: any, quantity: number = 1) => {
+  const addItem = async (vinylStockId: number, quantity: number = 1) => {
     const config = useRuntimeConfig()
     const authStore = useAuthStore()
     
-    if (!authStore.isAuthenticated) return false
+    if (!authStore.isAuthenticated) {
+      console.warn('Usuário não autenticado')
+      return false
+    }
+
+    if (!vinylStockId) {
+      console.error('vinyl_stock_id não fornecido')
+      return false
+    }
 
     try {
+      console.log('Adicionando ao carrinho:', { vinyl_stock_id: vinylStockId, quantity })
+      
       await $fetch('/cart/items', {
         baseURL: config.public.apiBase,
         method: 'POST',
         headers: {
           Authorization: `Bearer ${authStore.token}`
         },
-        body: { vinyl_stock_id: product.id || product.vinyl_stock_id, quantity }
+        body: { vinyl_stock_id: vinylStockId, quantity }
       })
       await fetchCart()
       clearShipping() // Limpar frete ao adicionar item
       return true
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding to cart:', error)
+      console.error('Response data:', error?.data)
       throw error
     }
   }

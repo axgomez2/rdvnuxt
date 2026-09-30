@@ -179,22 +179,32 @@
               </span>
             </div>
 
+            <!-- Erro do carrinho -->
+            <div v-if="cartError" class="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg text-sm">
+              {{ cartError }}
+            </div>
+
             <!-- Botões de Ação -->
             <div class="flex flex-col sm:flex-row gap-3 pt-2">
               <!-- Comprar / Reservar -->
               <button
                 @click="addToCart"
-                :disabled="!vinyl.can_buy"
+                :disabled="!vinyl.can_buy || addingToCart"
                 class="flex-1 flex items-center justify-center gap-2 py-4 rounded-xl font-semibold text-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 :class="isInCart ? 'bg-green-500 text-white hover:bg-green-400' : 'bg-yellow-400 text-stone-900 hover:bg-yellow-300'"
               >
-                <svg v-if="!isInCart" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <!-- Loading -->
+                <svg v-if="addingToCart" class="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <svg v-else-if="!isInCart" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
                 </svg>
                 <svg v-else class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
                 </svg>
-                {{ isInCart ? 'Adicionado ao Carrinho' : (vinyl.is_preorder ? 'Reservar' : 'Comprar') }}
+                {{ addingToCart ? 'Adicionando...' : (isInCart ? 'Adicionado ao Carrinho' : (vinyl.is_preorder ? 'Reservar' : 'Comprar')) }}
               </button>
 
               <!-- Wishlist / Wantlist -->
@@ -653,6 +663,9 @@ const handleImageError = (e: Event) => {
   target.src = PLACEHOLDER_IMG
 }
 
+const addingToCart = ref(false)
+const cartError = ref<string | null>(null)
+
 const addToCart = async () => {
   if (!vinyl.value?.can_buy) return
 
@@ -661,11 +674,25 @@ const addToCart = async () => {
     return
   }
 
-  if (isInCart.value) {
-    const item = cartStore.items.find(i => i.vinyl_stock_id === vinyl.value!.id)
-    if (item) await cartStore.removeItem(item.id)
-  } else {
-    await cartStore.addItem(vinyl.value.id)
+  cartError.value = null
+  addingToCart.value = true
+
+  try {
+    if (isInCart.value) {
+      const item = cartStore.items.find(i => i.vinyl_stock_id === vinyl.value!.id || i.id === vinyl.value!.id)
+      if (item) await cartStore.removeItem(item.id)
+    } else {
+      // O ID retornado pela API é o vinyl_stock_id
+      const vinylStockId = vinyl.value.id
+      console.log('Tentando adicionar vinyl_stock_id:', vinylStockId)
+      await cartStore.addItem(vinylStockId)
+    }
+  } catch (error: any) {
+    console.error('Erro ao adicionar ao carrinho:', error)
+    cartError.value = error?.data?.message || 'Erro ao adicionar ao carrinho'
+    setTimeout(() => cartError.value = null, 3000)
+  } finally {
+    addingToCart.value = false
   }
 }
 
