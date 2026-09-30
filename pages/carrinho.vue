@@ -12,6 +12,8 @@ useHead({
 })
 
 const postalCodeInput = ref(cartStore.shippingPostalCode || '')
+const quantityError = ref<string | null>(null)
+const updatingItem = ref<number | null>(null)
 
 const handleCalculateShipping = () => {
   if (postalCodeInput.value) {
@@ -29,6 +31,45 @@ const resolveImageUrl = (url: string | undefined) => {
 // Formatar preço
 const formatPrice = (price: number) => {
   return `R$ ${price.toFixed(2).replace('.', ',')}`
+}
+
+// Verificar se pode aumentar quantidade (considerando estoque)
+const canIncreaseQuantity = (item: any) => {
+  // Se é pré-venda, não tem limite
+  if (item.isPreorder) return true
+  // Verifica estoque disponível
+  const stock = item.stock || item.vinyl?.stock || 999
+  return item.quantity < stock
+}
+
+// Obter estoque do item
+const getItemStock = (item: any) => {
+  return item.stock || item.vinyl?.stock || null
+}
+
+// Atualizar quantidade com validação
+const updateQuantity = async (item: any, newQuantity: number) => {
+  const stock = getItemStock(item)
+  
+  // Validar quantidade mínima
+  if (newQuantity < 1) return
+  
+  // Validar estoque (se não for pré-venda)
+  if (!item.isPreorder && stock && newQuantity > stock) {
+    quantityError.value = `Quantidade máxima disponível: ${stock}`
+    setTimeout(() => quantityError.value = null, 3000)
+    return
+  }
+  
+  updatingItem.value = item.id
+  try {
+    await cartStore.updateQuantity(item.id, newQuantity)
+  } catch (error: any) {
+    quantityError.value = error?.data?.message || 'Erro ao atualizar quantidade'
+    setTimeout(() => quantityError.value = null, 3000)
+  } finally {
+    updatingItem.value = null
+  }
 }
 
 // Buscar endereço padrão do cliente
@@ -92,6 +133,14 @@ onMounted(async () => {
       <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Lista de Itens -->
         <div class="lg:col-span-2 space-y-4">
+          <!-- Erro de quantidade -->
+          <div v-if="quantityError" class="bg-orange-50 border border-orange-200 text-orange-700 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            {{ quantityError }}
+          </div>
+          
           <div 
             v-for="item in cartStore.items" 
             :key="item.id"
@@ -122,24 +171,44 @@ onMounted(async () => {
                   {{ formatPrice(item.originalPrice) }}
                 </p>
               </div>
+              <!-- Info de estoque -->
+              <p v-if="getItemStock(item) && !item.isPreorder" class="text-xs text-stone-400 mt-1">
+                {{ getItemStock(item) }} em estoque
+              </p>
             </div>
             
             <!-- Quantidade -->
-            <div class="flex items-center gap-2">
-              <button 
-                @click="cartStore.updateQuantity(item.id, item.quantity - 1)"
-                class="w-8 h-8 bg-stone-100 rounded-lg flex items-center justify-center text-stone-700 hover:bg-stone-200 transition-colors"
-                :disabled="item.quantity <= 1"
-              >
-                -
-              </button>
-              <span class="w-8 text-center text-stone-900">{{ item.quantity }}</span>
-              <button 
-                @click="cartStore.updateQuantity(item.id, item.quantity + 1)"
-                class="w-8 h-8 bg-stone-100 rounded-lg flex items-center justify-center text-stone-700 hover:bg-stone-200 transition-colors"
-              >
-                +
-              </button>
+            <div class="flex flex-col items-center gap-1">
+              <div class="flex items-center gap-2">
+                <button 
+                  @click="updateQuantity(item, item.quantity - 1)"
+                  class="w-8 h-8 bg-stone-100 rounded-lg flex items-center justify-center text-stone-700 hover:bg-stone-200 transition-colors disabled:opacity-50"
+                  :disabled="item.quantity <= 1 || updatingItem === item.id"
+                >
+                  -
+                </button>
+                <span class="w-8 text-center text-stone-900">
+                  <template v-if="updatingItem === item.id">
+                    <svg class="w-4 h-4 animate-spin mx-auto" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                  </template>
+                  <template v-else>{{ item.quantity }}</template>
+                </span>
+                <button 
+                  @click="updateQuantity(item, item.quantity + 1)"
+                  class="w-8 h-8 bg-stone-100 rounded-lg flex items-center justify-center text-stone-700 hover:bg-stone-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  :disabled="!canIncreaseQuantity(item) || updatingItem === item.id"
+                  :title="!canIncreaseQuantity(item) ? 'Quantidade máxima atingida' : ''"
+                >
+                  +
+                </button>
+              </div>
+              <!-- Aviso de limite -->
+              <span v-if="!canIncreaseQuantity(item)" class="text-xs text-orange-500">
+                Máx. atingido
+              </span>
             </div>
             
             <!-- Remover -->

@@ -666,11 +666,34 @@ const handleImageError = (e: Event) => {
 const addingToCart = ref(false)
 const cartError = ref<string | null>(null)
 
+// Quantidade atual no carrinho para este item
+const quantityInCart = computed(() => {
+  if (!vinyl.value) return 0
+  const item = cartStore.items.find(i => i.vinyl_stock_id === vinyl.value!.id || i.id === vinyl.value!.id)
+  return item?.quantity || 0
+})
+
+// Verifica se pode adicionar mais (considerando estoque)
+const canAddMore = computed(() => {
+  if (!vinyl.value) return false
+  // Se é pré-venda, não tem limite de estoque
+  if (vinyl.value.is_preorder) return true
+  // Verifica se a quantidade no carrinho é menor que o estoque
+  return quantityInCart.value < (vinyl.value.stock || 0)
+})
+
 const addToCart = async () => {
   if (!vinyl.value?.can_buy) return
 
   if (!authStore.isAuthenticated) {
     navigateTo('/login')
+    return
+  }
+
+  // Se já está no carrinho e não pode adicionar mais, mostrar erro
+  if (isInCart.value && !canAddMore.value) {
+    cartError.value = `Quantidade máxima em estoque: ${vinyl.value.stock}`
+    setTimeout(() => cartError.value = null, 3000)
     return
   }
 
