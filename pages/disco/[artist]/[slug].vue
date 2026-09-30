@@ -666,22 +666,6 @@ const handleImageError = (e: Event) => {
 const addingToCart = ref(false)
 const cartError = ref<string | null>(null)
 
-// Quantidade atual no carrinho para este item
-const quantityInCart = computed(() => {
-  if (!vinyl.value) return 0
-  const item = cartStore.items.find(i => i.vinyl_stock_id === vinyl.value!.id || i.id === vinyl.value!.id)
-  return item?.quantity || 0
-})
-
-// Verifica se pode adicionar mais (considerando estoque)
-const canAddMore = computed(() => {
-  if (!vinyl.value) return false
-  // Se é pré-venda, não tem limite de estoque
-  if (vinyl.value.is_preorder) return true
-  // Verifica se a quantidade no carrinho é menor que o estoque
-  return quantityInCart.value < (vinyl.value.stock || 0)
-})
-
 const addToCart = async () => {
   if (!vinyl.value?.can_buy) return
 
@@ -690,30 +674,24 @@ const addToCart = async () => {
     return
   }
 
-  // Se já está no carrinho e não pode adicionar mais, mostrar erro
-  if (isInCart.value && !canAddMore.value) {
-    cartError.value = `Quantidade máxima em estoque: ${vinyl.value.stock}`
-    setTimeout(() => cartError.value = null, 3000)
-    return
-  }
-
   cartError.value = null
   addingToCart.value = true
 
   try {
     if (isInCart.value) {
+      // Remover do carrinho
       const item = cartStore.items.find(i => i.vinyl_stock_id === vinyl.value!.id || i.id === vinyl.value!.id)
       if (item) await cartStore.removeItem(item.id)
     } else {
-      // O ID retornado pela API é o vinyl_stock_id
+      // Adicionar ao carrinho - a validação de estoque é feita pela API
       const vinylStockId = vinyl.value.id
-      console.log('Tentando adicionar vinyl_stock_id:', vinylStockId)
       await cartStore.addItem(vinylStockId)
     }
   } catch (error: any) {
     console.error('Erro ao adicionar ao carrinho:', error)
+    // Mostrar mensagem de erro da API (inclui validação de estoque)
     cartError.value = error?.data?.message || 'Erro ao adicionar ao carrinho'
-    setTimeout(() => cartError.value = null, 3000)
+    setTimeout(() => cartError.value = null, 5000)
   } finally {
     addingToCart.value = false
   }

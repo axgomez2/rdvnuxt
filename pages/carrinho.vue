@@ -33,40 +33,25 @@ const formatPrice = (price: number) => {
   return `R$ ${price.toFixed(2).replace('.', ',')}`
 }
 
-// Verificar se pode aumentar quantidade (considerando estoque)
-const canIncreaseQuantity = (item: any) => {
-  // Se é pré-venda, não tem limite
-  if (item.isPreorder) return true
-  // Verifica estoque disponível
-  const stock = item.stock || item.vinyl?.stock || 999
-  return item.quantity < stock
-}
-
 // Obter estoque do item
 const getItemStock = (item: any) => {
   return item.stock || item.vinyl?.stock || null
 }
 
-// Atualizar quantidade com validação
+// Atualizar quantidade - validação é feita pela API
 const updateQuantity = async (item: any, newQuantity: number) => {
-  const stock = getItemStock(item)
-  
-  // Validar quantidade mínima
+  // Validar quantidade mínima no frontend
   if (newQuantity < 1) return
   
-  // Validar estoque (se não for pré-venda)
-  if (!item.isPreorder && stock && newQuantity > stock) {
-    quantityError.value = `Quantidade máxima disponível: ${stock}`
-    setTimeout(() => quantityError.value = null, 3000)
-    return
-  }
-  
   updatingItem.value = item.id
+  quantityError.value = null
+  
   try {
     await cartStore.updateQuantity(item.id, newQuantity)
   } catch (error: any) {
+    // Mostrar mensagem de erro da API (inclui validação de estoque)
     quantityError.value = error?.data?.message || 'Erro ao atualizar quantidade'
-    setTimeout(() => quantityError.value = null, 3000)
+    setTimeout(() => quantityError.value = null, 5000)
   } finally {
     updatingItem.value = null
   }
@@ -199,16 +184,11 @@ onMounted(async () => {
                 <button 
                   @click="updateQuantity(item, item.quantity + 1)"
                   class="w-8 h-8 bg-stone-100 rounded-lg flex items-center justify-center text-stone-700 hover:bg-stone-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  :disabled="!canIncreaseQuantity(item) || updatingItem === item.id"
-                  :title="!canIncreaseQuantity(item) ? 'Quantidade máxima atingida' : ''"
+                  :disabled="updatingItem === item.id"
                 >
                   +
                 </button>
               </div>
-              <!-- Aviso de limite -->
-              <span v-if="!canIncreaseQuantity(item)" class="text-xs text-orange-500">
-                Máx. atingido
-              </span>
             </div>
             
             <!-- Remover -->
