@@ -4,7 +4,13 @@ import type { User, AuthResponse, LoginRequest, RegisterRequest } from '~/types'
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const token = ref<string | null>(null)
-  const isAuthenticated = computed(() => !!token.value)
+  const authLoading = ref(false)
+  
+  // Autenticado = tem token E tem usuário carregado
+  const isAuthenticated = computed(() => !!token.value && !!user.value)
+  
+  // Tem token mas ainda não carregou usuário
+  const hasToken = computed(() => !!token.value)
   
   const userInitials = computed(() => {
     if (!user.value?.name) return ''
@@ -108,11 +114,14 @@ export const useAuthStore = defineStore('auth', () => {
       const savedToken = localStorage.getItem('auth_token')
       if (savedToken) {
         token.value = savedToken
+        authLoading.value = true
         try {
           await fetchUser()
         } catch (error) {
           // Token inválido, já foi limpo no fetchUser
           console.error('Token inválido, sessão limpa')
+        } finally {
+          authLoading.value = false
         }
       }
     }
@@ -132,7 +141,9 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     user,
     token,
+    authLoading,
     isAuthenticated,
+    hasToken,
     userInitials,
     login,
     register,

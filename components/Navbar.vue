@@ -119,7 +119,14 @@ const isActive = (path: string) => {
 
             <!-- Área do Usuário + Carrinho -->
             <div class="flex items-center space-x-4">
-              <template v-if="authStore.isAuthenticated">
+              <!-- Loading auth -->
+              <template v-if="authStore.authLoading">
+                <div class="w-9 h-9 bg-stone-700 rounded-full flex items-center justify-center animate-pulse">
+                  <div class="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              </template>
+              
+              <template v-else-if="authStore.isAuthenticated">
                 <!-- Dropdown Área do Cliente -->
                 <div class="relative user-dropdown">
                   <button
@@ -127,9 +134,9 @@ const isActive = (path: string) => {
                     class="flex items-center space-x-2 text-white hover:text-yellow-400 transition-colors"
                   >
                     <div class="w-9 h-9 bg-yellow-400 rounded-full flex items-center justify-center">
-                      <span class="text-stone-900 font-semibold text-sm">{{ authStore.userInitials }}</span>
+                      <span class="text-stone-900 font-semibold text-sm">{{ authStore.userInitials || '?' }}</span>
                     </div>
-                    <span class="font-medium hidden xl:inline">{{ authStore.user?.name?.split(' ')[0] }}</span>
+                    <span class="font-medium hidden xl:inline">{{ authStore.user?.name?.split(' ')[0] || 'Usuário' }}</span>
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                     </svg>
