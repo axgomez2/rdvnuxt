@@ -113,8 +113,9 @@ export const useAuthStore = defineStore('auth', () => {
     if (process.client) {
       const savedToken = localStorage.getItem('auth_token')
       if (savedToken) {
-        token.value = savedToken
+        // Setar loading ANTES de setar o token
         authLoading.value = true
+        token.value = savedToken
         try {
           await fetchUser()
         } catch (error) {
