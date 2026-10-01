@@ -19,8 +19,8 @@
         </NuxtLink>
       </div>
 
-      <!-- Grid Desktop -->
-      <div class="hidden md:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+      <!-- Grid Desktop - 5 cards por row -->
+      <div class="hidden md:grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-5">
         <VinylCard 
           v-for="vinyl in vinyls" 
           :key="vinyl.id" 
@@ -28,20 +28,24 @@
         />
       </div>
 
-      <!-- List Mobile -->
-      <div class="md:hidden space-y-3">
-        <VinylCard 
-          v-for="vinyl in vinyls" 
-          :key="vinyl.id" 
-          :vinyl="vinyl"
-        />
+      <!-- Slider Mobile - 2 cards visíveis -->
+      <div class="md:hidden">
+        <div class="flex gap-3 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide -mx-4 px-4">
+          <div 
+            v-for="vinyl in vinyls" 
+            :key="vinyl.id"
+            class="flex-shrink-0 w-[calc(50%-6px)] snap-start"
+          >
+            <VinylCardMobile :vinyl="vinyl" />
+          </div>
+        </div>
       </div>
 
       <!-- Link ver todos mobile -->
       <NuxtLink
         v-if="viewAllLink"
         :to="viewAllLink"
-        class="sm:hidden flex items-center justify-center gap-2 mt-6 text-yellow-600 hover:text-yellow-700 font-medium transition-colors"
+        class="sm:hidden flex items-center justify-center gap-2 mt-4 text-yellow-600 hover:text-yellow-700 font-medium transition-colors"
       >
         Ver todos
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,3 +77,13 @@ const props = withDefaults(defineProps<Props>(), {
 
 const vinyls = computed(() => props.section?.vinyls?.slice(0, 20) || [])
 </script>
+
+<style scoped>
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+</style>

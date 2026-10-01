@@ -13,7 +13,7 @@
       <!-- Badges -->
       <div class="absolute top-3 left-3 flex flex-col gap-2">
         <span v-if="isPreorder" class="bg-purple-600 text-white text-xs font-bold px-2 py-1 rounded">
-          PRÉ-VENDA
+          EM BREVE
         </span>
         <span v-else-if="vinyl.is_new && inStock" class="bg-green-600 text-white text-xs font-bold px-2 py-1 rounded">
           NOVO
@@ -22,7 +22,7 @@
           OFERTA
         </span>
         <span v-if="!inStock && !isPreorder" class="bg-stone-700 text-white text-xs font-bold px-2 py-1 rounded">
-          INDISPONÍVEL
+          ESGOTADO
         </span>
       </div>
       
@@ -34,7 +34,7 @@
       <!-- Data de lançamento para pré-venda -->
       <div v-if="isPreorder && vinyl.formatted_release_date" class="absolute bottom-3 left-3 right-3">
         <div class="bg-purple-600/90 text-white text-xs font-medium px-3 py-1.5 rounded text-center">
-          Lançamento: {{ vinyl.formatted_release_date }}
+          Estoque em: {{ vinyl.formatted_release_date }}
         </div>
       </div>
     </NuxtLink>
@@ -148,13 +148,13 @@
           @error="handleImageError"
         />
         <span v-if="isPreorder" class="absolute top-1 left-1 bg-purple-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
-          PRÉ-VENDA
+          EM BREVE
         </span>
         <span v-else-if="vinyl.is_promotional && inStock" class="absolute top-1 left-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
           OFERTA
         </span>
         <span v-else-if="!inStock" class="absolute top-1 left-1 bg-stone-700 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
-          INDISPONÍVEL
+          ESGOTADO
         </span>
         <!-- Overlay mobile para indisponível -->
         <div v-if="!inStock && !isPreorder" class="absolute inset-0 bg-black/20"></div>
