@@ -29,7 +29,12 @@ const closeDropdowns = (e: MouseEvent) => {
 onMounted(async () => {
   document.addEventListener('click', closeDropdowns)
   siteSettings.fetchSettings()
-  authStore.initializeAuth()
+  
+  // Aguardar inicialização da auth (feita pelo plugin)
+  // Se ainda não inicializou, aguardar
+  if (!authStore.authInitialized) {
+    await authStore.initializeAuth()
+  }
   
   // Carregar dados do usuário autenticado
   if (authStore.isAuthenticated) {
@@ -119,14 +124,15 @@ const isActive = (path: string) => {
 
             <!-- Área do Usuário + Carrinho -->
             <div class="flex items-center space-x-4">
-              <!-- Loading auth (tem token mas ainda carregando usuário) -->
-              <template v-if="authStore.authLoading || (authStore.hasToken && !authStore.user)">
-                <div class="w-9 h-9 bg-stone-700 rounded-full flex items-center justify-center animate-pulse">
-                  <div class="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
-                </div>
-              </template>
-              
-              <template v-else-if="authStore.isAuthenticated">
+              <ClientOnly>
+                <!-- Loading auth (tem token mas ainda carregando usuário) -->
+                <template v-if="authStore.authLoading || (authStore.hasToken && !authStore.user)">
+                  <div class="w-9 h-9 bg-stone-700 rounded-full flex items-center justify-center animate-pulse">
+                    <div class="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                </template>
+                
+                <template v-else-if="authStore.isAuthenticated">
                 <!-- Dropdown Área do Cliente -->
                 <div class="relative user-dropdown">
                   <button
@@ -225,20 +231,28 @@ const isActive = (path: string) => {
               </template>
 
               <template v-else>
-                <!-- Login e Cadastro -->
-                <NuxtLink
-                  to="/login"
-                  class="text-white hover:text-yellow-400 transition-colors font-medium"
-                >
-                  Entrar
-                </NuxtLink>
-                <NuxtLink
-                  to="/cadastro"
-                  class="bg-yellow-400 text-stone-900 px-5 py-2 rounded-lg hover:bg-yellow-300 transition-colors font-semibold"
-                >
-                  Cadastrar
-                </NuxtLink>
-              </template>
+                  <!-- Login e Cadastro -->
+                  <NuxtLink
+                    to="/login"
+                    class="text-white hover:text-yellow-400 transition-colors font-medium"
+                  >
+                    Entrar
+                  </NuxtLink>
+                  <NuxtLink
+                    to="/cadastro"
+                    class="bg-yellow-400 text-stone-900 px-5 py-2 rounded-lg hover:bg-yellow-300 transition-colors font-semibold"
+                  >
+                    Cadastrar
+                  </NuxtLink>
+                </template>
+                
+                <!-- Fallback para SSR -->
+                <template #fallback>
+                  <div class="w-9 h-9 bg-stone-700 rounded-full flex items-center justify-center">
+                    <div class="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                </template>
+              </ClientOnly>
             </div>
           </div>
         </div>
@@ -340,31 +354,39 @@ const isActive = (path: string) => {
           </button>
 
           <!-- Usuário ou Login -->
-          <template v-if="authStore.authLoading || (authStore.hasToken && !authStore.user)">
-            <div class="w-8 h-8 bg-stone-700 rounded-full flex items-center justify-center animate-pulse">
-              <div class="w-3 h-3 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          </template>
-          <template v-else-if="authStore.isAuthenticated">
-            <NuxtLink to="/carrinho" class="relative p-2 text-white hover:text-yellow-400 transition-colors">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
-              </svg>
-              <span
-                v-if="cartStore.count > 0"
-                class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-yellow-400 text-stone-900 text-[10px] font-bold rounded-full flex items-center justify-center"
-              >
-                {{ cartStore.count > 9 ? '9+' : cartStore.count }}
-              </span>
-            </NuxtLink>
-          </template>
-          <template v-else>
-            <NuxtLink to="/login" class="p-2 text-white hover:text-yellow-400 transition-colors">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-              </svg>
-            </NuxtLink>
-          </template>
+          <ClientOnly>
+            <template v-if="authStore.authLoading || (authStore.hasToken && !authStore.user)">
+              <div class="w-8 h-8 bg-stone-700 rounded-full flex items-center justify-center animate-pulse">
+                <div class="w-3 h-3 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            </template>
+            <template v-else-if="authStore.isAuthenticated">
+              <NuxtLink to="/carrinho" class="relative p-2 text-white hover:text-yellow-400 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+                <span
+                  v-if="cartStore.count > 0"
+                  class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-yellow-400 text-stone-900 text-[10px] font-bold rounded-full flex items-center justify-center"
+                >
+                  {{ cartStore.count > 9 ? '9+' : cartStore.count }}
+                </span>
+              </NuxtLink>
+            </template>
+            <template v-else>
+              <NuxtLink to="/login" class="p-2 text-white hover:text-yellow-400 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+              </NuxtLink>
+            </template>
+            
+            <template #fallback>
+              <div class="w-8 h-8 bg-stone-700 rounded-full flex items-center justify-center">
+                <div class="w-3 h-3 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            </template>
+          </ClientOnly>
         </div>
       </div>
 
@@ -541,19 +563,20 @@ const isActive = (path: string) => {
 
               <!-- Área do Usuário (parte inferior) -->
               <div class="border-t border-stone-800 p-4">
-                <!-- Loading -->
-                <template v-if="authStore.authLoading || (authStore.hasToken && !authStore.user)">
-                  <div class="flex items-center space-x-3 mb-4 px-2">
-                    <div class="w-12 h-12 bg-stone-700 rounded-full flex items-center justify-center animate-pulse">
-                      <div class="w-5 h-5 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+                <ClientOnly>
+                  <!-- Loading -->
+                  <template v-if="authStore.authLoading || (authStore.hasToken && !authStore.user)">
+                    <div class="flex items-center space-x-3 mb-4 px-2">
+                      <div class="w-12 h-12 bg-stone-700 rounded-full flex items-center justify-center animate-pulse">
+                        <div class="w-5 h-5 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                      <div class="min-w-0">
+                        <div class="h-4 w-24 bg-stone-700 rounded animate-pulse"></div>
+                        <div class="h-3 w-32 bg-stone-700 rounded animate-pulse mt-1"></div>
+                      </div>
                     </div>
-                    <div class="min-w-0">
-                      <div class="h-4 w-24 bg-stone-700 rounded animate-pulse"></div>
-                      <div class="h-3 w-32 bg-stone-700 rounded animate-pulse mt-1"></div>
-                    </div>
-                  </div>
-                </template>
-                <template v-else-if="authStore.isAuthenticated">
+                  </template>
+                  <template v-else-if="authStore.isAuthenticated">
                   <div class="flex items-center space-x-3 mb-4 px-2">
                     <div class="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center flex-shrink-0">
                       <span class="text-stone-900 font-bold text-lg">{{ authStore.userInitials }}</span>
@@ -635,23 +658,36 @@ const isActive = (path: string) => {
                   </div>
                 </template>
                 <template v-else>
-                  <div class="space-y-2">
-                    <NuxtLink
-                      to="/login"
-                      @click="closeMobileMenu"
-                      class="flex items-center justify-center w-full py-3 border border-stone-600 rounded-lg text-white hover:border-yellow-400 hover:text-yellow-400 transition-colors font-medium"
-                    >
-                      Entrar
-                    </NuxtLink>
-                    <NuxtLink
-                      to="/cadastro"
-                      @click="closeMobileMenu"
-                      class="flex items-center justify-center w-full py-3 bg-yellow-400 rounded-lg text-stone-900 hover:bg-yellow-300 transition-colors font-semibold"
-                    >
-                      Cadastrar
-                    </NuxtLink>
-                  </div>
-                </template>
+                    <div class="space-y-2">
+                      <NuxtLink
+                        to="/login"
+                        @click="closeMobileMenu"
+                        class="flex items-center justify-center w-full py-3 border border-stone-600 rounded-lg text-white hover:border-yellow-400 hover:text-yellow-400 transition-colors font-medium"
+                      >
+                        Entrar
+                      </NuxtLink>
+                      <NuxtLink
+                        to="/cadastro"
+                        @click="closeMobileMenu"
+                        class="flex items-center justify-center w-full py-3 bg-yellow-400 rounded-lg text-stone-900 hover:bg-yellow-300 transition-colors font-semibold"
+                      >
+                        Cadastrar
+                      </NuxtLink>
+                    </div>
+                  </template>
+                  
+                  <template #fallback>
+                    <div class="flex items-center space-x-3 mb-4 px-2">
+                      <div class="w-12 h-12 bg-stone-700 rounded-full flex items-center justify-center animate-pulse">
+                        <div class="w-5 h-5 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                      <div class="min-w-0">
+                        <div class="h-4 w-24 bg-stone-700 rounded animate-pulse"></div>
+                        <div class="h-3 w-32 bg-stone-700 rounded animate-pulse mt-1"></div>
+                      </div>
+                    </div>
+                  </template>
+                </ClientOnly>
               </div>
             </div>
           </Transition>

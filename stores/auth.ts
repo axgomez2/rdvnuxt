@@ -95,15 +95,16 @@ export const useAuthStore = defineStore('auth', () => {
   const fetchUser = async () => {
     const config = useRuntimeConfig()
     try {
-      const response = await $fetch<User>('/auth/user', {
+      const response = await $fetch<{ user: User }>('/auth/user', {
         baseURL: config.public.apiBase,
         headers: {
           Authorization: `Bearer ${token.value}`
         }
       })
       
-      user.value = response
-      return response
+      // A API retorna { user: {...} }
+      user.value = response.user
+      return response.user
     } catch (error: any) {
       // Se o token for inválido (401) ou houver redirect, limpar sessão
       if (error?.status === 401 || error?.response?.status === 401 || error?.message?.includes('Failed to fetch')) {
