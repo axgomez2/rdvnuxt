@@ -181,10 +181,12 @@
 
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
+import { useCartStore } from '~/stores/cart'
 
 const route = useRoute()
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
+const cartStore = useCartStore()
 
 const orderNumber = computed(() => route.params.number as string)
 const statusType = computed(() => route.params.status as string)
@@ -198,11 +200,21 @@ const fetchOrder = async () => {
   error.value = false
   
   try {
+    // Aguardar autenticação ser inicializada
+    if (!authStore.authInitialized) {
+      await authStore.initializeAuth()
+    }
+    
     const response = await $fetch<{ data: any }>(`/orders/${orderNumber.value}`, {
       baseURL: config.public.apiBase,
       headers: authStore.token ? { Authorization: `Bearer ${authStore.token}` } : {}
     })
     order.value = response.data
+    
+    // Se o pedido foi pago/aprovado, limpar o carrinho
+    if (statusType.value === 'sucesso' || order.value?.status === 'paid') {
+      cartStore.clearCart()
+    }
   } catch (err) {
     console.error('Erro ao carregar pedido:', err)
     error.value = true
