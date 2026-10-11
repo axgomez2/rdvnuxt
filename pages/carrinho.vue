@@ -15,6 +15,37 @@ const postalCodeInput = ref(cartStore.shippingPostalCode || '')
 const quantityError = ref<string | null>(null)
 const updatingItem = ref<number | null>(null)
 
+// Verificar se item está sem estoque
+const isOutOfStock = (item: any) => {
+  if (item.isPreorder) return false
+  const stock = item.stock ?? item.vinyl?.stock ?? null
+  if (stock === null) return false
+  return stock <= 0
+}
+
+// Verificar se quantidade excede estoque
+const exceedsStock = (item: any) => {
+  if (item.isPreorder) return false
+  const stock = item.stock ?? item.vinyl?.stock ?? null
+  if (stock === null) return false
+  return item.quantity > stock
+}
+
+// Verificar se há itens com problema de estoque
+const hasStockIssues = computed(() => {
+  return cartStore.items?.some((item: any) => isOutOfStock(item) || exceedsStock(item)) || false
+})
+
+// Itens sem estoque
+const outOfStockItems = computed(() => {
+  return cartStore.items?.filter((item: any) => isOutOfStock(item)) || []
+})
+
+// Itens com quantidade excedendo estoque
+const overStockItems = computed(() => {
+  return cartStore.items?.filter((item: any) => exceedsStock(item) && !isOutOfStock(item)) || []
+})
+
 const handleCalculateShipping = () => {
   if (postalCodeInput.value) {
     cartStore.calculateShipping(postalCodeInput.value.replace(/\D/g, ''))
@@ -118,6 +149,32 @@ onMounted(async () => {
       <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Lista de Itens -->
         <div class="lg:col-span-2 space-y-4">
+          <!-- Alerta de itens sem estoque -->
+          <div v-if="outOfStockItems.length > 0" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            <div class="flex items-start gap-2">
+              <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+              <div>
+                <p class="font-medium">Itens esgotados no seu carrinho</p>
+                <p class="text-sm mt-1">Remova os itens sem estoque para continuar com a compra.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Alerta de quantidade excedendo estoque -->
+          <div v-if="overStockItems.length > 0" class="bg-orange-50 border border-orange-200 text-orange-700 px-4 py-3 rounded-lg">
+            <div class="flex items-start gap-2">
+              <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+              <div>
+                <p class="font-medium">Quantidade indisponível</p>
+                <p class="text-sm mt-1">Alguns itens têm quantidade maior que o estoque disponível. Ajuste as quantidades para continuar.</p>
+              </div>
+            </div>
+          </div>
+
           <!-- Erro de quantidade -->
           <div v-if="quantityError" class="bg-orange-50 border border-orange-200 text-orange-700 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
             <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -129,14 +186,26 @@ onMounted(async () => {
           <div 
             v-for="item in cartStore.items" 
             :key="item.id"
-            class="bg-white rounded-xl shadow-sm p-4 flex gap-4"
+            class="bg-white rounded-xl shadow-sm p-4 flex gap-4 relative"
+            :class="{ 'opacity-60 border-2 border-red-300': isOutOfStock(item), 'border-2 border-orange-300': exceedsStock(item) && !isOutOfStock(item) }"
           >
+            <!-- Badge de esgotado -->
+            <div v-if="isOutOfStock(item)" class="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
+              ESGOTADO
+            </div>
+            
+            <!-- Badge de estoque insuficiente -->
+            <div v-else-if="exceedsStock(item)" class="absolute top-2 right-2 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded">
+              ESTOQUE: {{ getItemStock(item) }}
+            </div>
+
             <!-- Imagem -->
             <div class="w-24 h-24 bg-stone-100 rounded-lg flex-shrink-0 overflow-hidden">
               <img 
                 :src="resolveImageUrl(item.image || item.vinyl?.cover_image)" 
                 :alt="item.title || item.vinyl?.title"
                 class="w-full h-full object-cover"
+                :class="{ 'grayscale': isOutOfStock(item) }"
                 @error="($event.target as HTMLImageElement).src = '/placeholder.svg'"
               />
             </div>
@@ -149,7 +218,7 @@ onMounted(async () => {
               </div>
               <p class="text-stone-500 text-sm">{{ item.artist || item.vinyl?.artist }}</p>
               <div class="mt-1 flex items-center gap-2">
-                <p class="text-yellow-600 font-semibold">
+                <p class="text-yellow-600 font-semibold" :class="{ 'text-stone-400': isOutOfStock(item) }">
                   {{ formatPrice(item.price || item.vinyl?.price || 0) }}
                 </p>
                 <p v-if="item.isPromotional && item.originalPrice" class="text-stone-400 text-sm line-through">
@@ -157,8 +226,8 @@ onMounted(async () => {
                 </p>
               </div>
               <!-- Info de estoque -->
-              <p v-if="getItemStock(item) && !item.isPreorder" class="text-xs text-stone-400 mt-1">
-                {{ getItemStock(item) }} em estoque
+              <p v-if="getItemStock(item) !== null && !item.isPreorder" class="text-xs mt-1" :class="isOutOfStock(item) ? 'text-red-500 font-medium' : 'text-stone-400'">
+                {{ isOutOfStock(item) ? 'Sem estoque' : `${getItemStock(item)} em estoque` }}
               </p>
             </div>
             
@@ -319,6 +388,7 @@ onMounted(async () => {
             </div>
             
             <NuxtLink 
+              v-if="!hasStockIssues"
               to="/checkout"
               class="block w-full bg-yellow-400 text-stone-900 py-3 rounded-lg font-semibold hover:bg-yellow-300 transition-colors text-center"
               :class="{ 'opacity-50 pointer-events-none': !cartStore.selectedShipping }"
@@ -326,7 +396,19 @@ onMounted(async () => {
               Finalizar Compra
             </NuxtLink>
 
-            <p v-if="!cartStore.selectedShipping" class="text-xs text-stone-500 text-center mt-2">
+            <!-- Botão desabilitado quando há problemas de estoque -->
+            <button 
+              v-else
+              disabled
+              class="block w-full bg-stone-300 text-stone-500 py-3 rounded-lg font-semibold cursor-not-allowed text-center"
+            >
+              Finalizar Compra
+            </button>
+
+            <p v-if="hasStockIssues" class="text-xs text-red-500 text-center mt-2">
+              Resolva os problemas de estoque para continuar
+            </p>
+            <p v-else-if="!cartStore.selectedShipping" class="text-xs text-stone-500 text-center mt-2">
               Calcule o frete para continuar
             </p>
             
