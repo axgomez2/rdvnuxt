@@ -149,6 +149,29 @@ onMounted(async () => {
       <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Lista de Itens -->
         <div class="lg:col-span-2 space-y-4">
+          <!-- Avisos de ajuste automático de estoque -->
+          <div v-if="cartStore.stockWarnings.length > 0" class="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg">
+            <div class="flex items-start gap-2">
+              <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <div class="flex-1">
+                <p class="font-medium">Seu carrinho foi atualizado</p>
+                <ul class="text-sm mt-1 space-y-1">
+                  <li v-for="(warning, idx) in cartStore.stockWarnings" :key="idx">
+                    {{ warning.message }}
+                  </li>
+                </ul>
+                <button 
+                  @click="cartStore.clearStockWarnings()" 
+                  class="text-sm text-blue-600 hover:underline mt-2"
+                >
+                  Entendi
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- Alerta de itens sem estoque -->
           <div v-if="outOfStockItems.length > 0" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
             <div class="flex items-start gap-2">

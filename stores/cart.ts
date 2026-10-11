@@ -35,9 +35,19 @@ interface ShippingQuote {
   preorder_note?: string
 }
 
+interface StockWarning {
+  type: 'removed' | 'adjusted'
+  message: string
+  item_id?: number
+  title?: string
+  old_quantity?: number
+  new_quantity?: number
+}
+
 export const useCartStore = defineStore('cart', () => {
   const items = ref<CartItem[]>([])
   const loading = ref(false)
+  const stockWarnings = ref<StockWarning[]>([])
 
   // Dados de frete
   const shippingPostalCode = ref('')
@@ -129,13 +139,20 @@ export const useCartStore = defineStore('cart', () => {
     }
 
     loading.value = true
+    stockWarnings.value = [] // Limpar avisos anteriores
+    
     try {
-      const response = await $fetch<{ data: any }>('/cart', {
+      const response = await $fetch<{ data: any, stock_warnings?: StockWarning[] }>('/cart', {
         baseURL: config.public.apiBase,
         headers: {
           Authorization: `Bearer ${authStore.token}`
         }
       })
+      
+      // Capturar avisos de estoque
+      if (response.stock_warnings && response.stock_warnings.length > 0) {
+        stockWarnings.value = response.stock_warnings
+      }
       
       // A API pode retornar { items: [...] } ou diretamente [...]
       const cartData = response.data
@@ -153,6 +170,7 @@ export const useCartStore = defineStore('cart', () => {
           format: it.format,
           image: it.image,
           quantity: it.quantity,
+          stock: it.stock, // Incluir estoque
           vinyl: it.vinyl
         }))
       } else if (Array.isArray(cartData)) {
@@ -169,6 +187,10 @@ export const useCartStore = defineStore('cart', () => {
     } finally {
       loading.value = false
     }
+  }
+
+  const clearStockWarnings = () => {
+    stockWarnings.value = []
   }
 
   const addItem = async (vinylStockId: number, quantity: number = 1) => {
@@ -334,6 +356,7 @@ export const useCartStore = defineStore('cart', () => {
     hasPreorder,
     preorderDate,
     isInCart,
+    stockWarnings,
     fetchCart,
     addItem,
     removeItem,
@@ -341,6 +364,7 @@ export const useCartStore = defineStore('cart', () => {
     calculateShipping,
     selectShipping,
     clearShipping,
-    clearCart
+    clearCart,
+    clearStockWarnings
   }
 })
