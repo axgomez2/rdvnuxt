@@ -15,10 +15,12 @@
     "@vueuse/nuxt": "^10.9.0",
     "nuxt": "^3.11.2",
     "pinia": "^2.1.7",
+    "sortablejs": "^1.15.7",
     "vue": "^3.4.0"
   },
   "devDependencies": {
     "@nuxt/typescript": "^2.8.1",
+    "@types/sortablejs": "^1.15.9",
     "typescript": "^5.4.0",
     "vue-tsc": "^3.3.9"
   }
