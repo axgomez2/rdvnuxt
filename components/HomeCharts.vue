@@ -20,23 +20,29 @@
 
       <!-- Grid Desktop -->
       <div class="hidden md:grid grid-cols-3 gap-6">
-        <ChartCard 
+        <NuxtLink 
           v-for="chart in charts.slice(0, 3)" 
           :key="chart.id" 
-          :chart="chart"
-        />
+          :to="`/charts/${chart.slug}`"
+          class="bg-white rounded-xl p-5 shadow-sm border border-stone-200 hover:shadow-md hover:border-yellow-300 transition-all"
+        >
+          <h3 class="text-lg font-bold text-stone-900 mb-1">{{ chart.title }}</h3>
+          <p class="text-sm text-stone-500">{{ chart.vinyls_count }} discos</p>
+        </NuxtLink>
       </div>
 
       <!-- Slider Mobile -->
       <div class="md:hidden">
         <div class="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide -mx-4 px-4">
-          <div 
+          <NuxtLink 
             v-for="chart in charts.slice(0, 3)" 
             :key="chart.id"
-            class="flex-shrink-0 w-[70%] snap-start"
+            :to="`/charts/${chart.slug}`"
+            class="flex-shrink-0 w-[70%] snap-start bg-white rounded-xl p-4 shadow-sm border border-stone-200"
           >
-            <ChartCard :chart="chart" />
-          </div>
+            <h3 class="text-base font-bold text-stone-900 mb-1">{{ chart.title }}</h3>
+            <p class="text-sm text-stone-500">{{ chart.vinyls_count }} discos</p>
+          </NuxtLink>
         </div>
       </div>
 
