@@ -24,15 +24,21 @@
         bg-class="bg-stone-50"
       />
 
-      <!-- Seção 3: Selos em Destaque -->
+      <!-- Seção 3: Charts -->
+      <HomeCharts />
+
+      <!-- Seção 4: Selos em Destaque -->
       <FeaturedLabels />
 
-      <!-- Seção 4: Discos Usados -->
+      <!-- Seção 5: Discos Usados -->
       <HomeSection
         :section="discosUsadosSection"
         view-all-link="/discos-usados"
         bg-class="bg-stone-50"
       />
+
+      <!-- Seção 6: DJ Playlists -->
+      <HomeDjPlaylists />
     </template>
 
     <!-- Footer -->
