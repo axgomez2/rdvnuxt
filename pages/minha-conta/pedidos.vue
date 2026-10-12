@@ -57,8 +57,7 @@ const formatDate = (dateString: string) => {
 }
 
 const getOrderDetailUrl = (order: any) => {
-  const status = order.status === 'paid' ? 'sucesso' : 'pendente'
-  return `/pedido/${order.order_number}/${status}`
+  return `/pedido/${order.order_number}`
 }
 </script>
 
