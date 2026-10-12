@@ -19,13 +19,15 @@ const error = ref('')
 
 const form = ref({
   label: '',
-  zipcode: '',
+  recipient_name: '',
+  zip_code: '',
   street: '',
   number: '',
   complement: '',
   neighborhood: '',
   city: '',
   state: '',
+  reference: '',
   is_default: false
 })
 
@@ -43,11 +45,11 @@ const formatCep = (value: string) => {
 
 const onCepInput = (e: Event) => {
   const target = e.target as HTMLInputElement
-  form.value.zipcode = formatCep(target.value)
+  form.value.zip_code = formatCep(target.value)
 }
 
 const searchCep = async () => {
-  const cep = form.value.zipcode.replace(/\D/g, '')
+  const cep = form.value.zip_code.replace(/\D/g, '')
   if (cep.length !== 8) return
 
   loadingCep.value = true
@@ -79,7 +81,7 @@ const submit = async () => {
       },
       body: {
         ...form.value,
-        zipcode: form.value.zipcode.replace(/\D/g, '')
+        zip_code: form.value.zip_code.replace(/\D/g, '')
       }
     })
 
@@ -124,12 +126,23 @@ const submit = async () => {
           />
         </div>
 
+        <!-- Recipient Name -->
+        <div>
+          <label class="block text-sm font-medium text-stone-700 mb-2">Nome do destinatário (opcional)</label>
+          <input
+            v-model="form.recipient_name"
+            type="text"
+            placeholder="Quem deve receber a encomenda"
+            class="w-full px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400"
+          />
+        </div>
+
         <!-- CEP -->
         <div>
           <label class="block text-sm font-medium text-stone-700 mb-2">CEP *</label>
           <div class="flex gap-3">
             <input
-              :value="form.zipcode"
+              :value="form.zip_code"
               @input="onCepInput"
               @blur="searchCep"
               type="text"
@@ -216,6 +229,17 @@ const submit = async () => {
               <option v-for="state in states" :key="state" :value="state">{{ state }}</option>
             </select>
           </div>
+        </div>
+
+        <!-- Reference -->
+        <div>
+          <label class="block text-sm font-medium text-stone-700 mb-2">Ponto de referência (opcional)</label>
+          <input
+            v-model="form.reference"
+            type="text"
+            placeholder="Ex: Próximo ao mercado, portão azul..."
+            class="w-full px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400"
+          />
         </div>
 
         <!-- Default -->

@@ -96,7 +96,9 @@ const deleteAddress = async (id: number) => {
               </p>
               <p class="text-stone-600">{{ address.neighborhood }}</p>
               <p class="text-stone-600">{{ address.city }} - {{ address.state }}</p>
-              <p class="text-stone-500">CEP: {{ address.zipcode }}</p>
+              <p class="text-stone-500">CEP: {{ address.formatted_zip_code || address.zip_code }}</p>
+              <p v-if="address.recipient_name" class="text-sm text-stone-500">Destinatário: {{ address.recipient_name }}</p>
+              <p v-if="address.reference" class="text-sm text-stone-500">Ref: {{ address.reference }}</p>
             </div>
             <div class="flex gap-2">
               <NuxtLink :to="`/minha-conta/enderecos/${address.id}`" class="p-2 text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg">
