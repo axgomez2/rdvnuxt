@@ -100,7 +100,6 @@ export interface User {
   phone: string | null
   cpf: string | null
   birth_date: string | null
-  is_dj: boolean
 }
 
 export interface AuthResponse {
