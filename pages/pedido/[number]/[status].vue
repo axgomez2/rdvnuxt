@@ -205,18 +205,34 @@ const fetchOrder = async () => {
       await authStore.initializeAuth()
     }
     
+    // Aguardar um pouco para garantir que o token está disponível
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
+    if (!authStore.token) {
+      console.error('Token não disponível')
+      error.value = true
+      return
+    }
+    
+    console.log('Buscando pedido:', orderNumber.value)
+    console.log('Token disponível:', !!authStore.token)
+    
     const response = await $fetch<{ data: any }>(`/orders/${orderNumber.value}`, {
       baseURL: config.public.apiBase,
-      headers: authStore.token ? { Authorization: `Bearer ${authStore.token}` } : {}
+      headers: { Authorization: `Bearer ${authStore.token}` }
     })
+    
+    console.log('Resposta do pedido:', response)
     order.value = response.data
     
     // Se o pedido foi pago/aprovado, limpar o carrinho
     if (statusType.value === 'sucesso' || order.value?.status === 'paid') {
       cartStore.clearCart()
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error('Erro ao carregar pedido:', err)
+    console.error('Status:', err?.status)
+    console.error('Data:', err?.data)
     error.value = true
   } finally {
     loading.value = false

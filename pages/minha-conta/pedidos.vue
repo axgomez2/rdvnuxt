@@ -22,23 +22,43 @@ const { data: orders, pending, error } = await useFetch<{ data: any[] }>('/order
 const getStatusColor = (status: string) => {
   const colors: Record<string, string> = {
     pending: 'bg-yellow-100 text-yellow-800',
+    paid: 'bg-green-100 text-green-800',
     processing: 'bg-blue-100 text-blue-800',
     shipped: 'bg-purple-100 text-purple-800',
     delivered: 'bg-green-100 text-green-800',
     cancelled: 'bg-red-100 text-red-800',
+    refunded: 'bg-stone-100 text-stone-800',
   }
   return colors[status] || 'bg-gray-100 text-gray-800'
 }
 
 const getStatusLabel = (status: string) => {
   const labels: Record<string, string> = {
-    pending: 'Pendente',
-    processing: 'Processando',
+    pending: 'Aguardando Pagamento',
+    paid: 'Pago',
+    processing: 'Em Processamento',
     shipped: 'Enviado',
     delivered: 'Entregue',
     cancelled: 'Cancelado',
+    refunded: 'Reembolsado',
   }
   return labels[status] || status
+}
+
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString)
+  return date.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const getOrderDetailUrl = (order: any) => {
+  const status = order.status === 'paid' ? 'sucesso' : 'pendente'
+  return `/pedido/${order.order_number}/${status}`
 }
 </script>
 
@@ -80,33 +100,65 @@ const getStatusLabel = (status: string) => {
 
       <!-- Orders List -->
       <div v-else class="space-y-4">
-        <div v-for="order in orders.data" :key="order.id" class="bg-white rounded-xl shadow-sm p-6">
+        <NuxtLink 
+          v-for="order in orders.data" 
+          :key="order.id" 
+          :to="getOrderDetailUrl(order)"
+          class="block bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow"
+        >
           <div class="flex items-center justify-between mb-4">
             <div>
-              <p class="text-sm text-stone-500">Pedido #{{ order.id }}</p>
-              <p class="text-sm text-stone-500">{{ new Date(order.created_at).toLocaleDateString('pt-BR') }}</p>
+              <p class="font-semibold text-stone-900">Pedido #{{ order.order_number }}</p>
+              <p class="text-sm text-stone-500">{{ formatDate(order.created_at) }}</p>
             </div>
-            <span :class="['px-3 py-1 rounded-full text-sm font-medium', getStatusColor(order.status)]">
-              {{ getStatusLabel(order.status) }}
-            </span>
+            <div class="flex items-center gap-3">
+              <span :class="['px-3 py-1 rounded-full text-sm font-medium', getStatusColor(order.status)]">
+                {{ getStatusLabel(order.status) }}
+              </span>
+              <svg class="w-5 h-5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </div>
           </div>
           
-          <div class="border-t pt-4">
-            <div v-for="item in order.items" :key="item.id" class="flex items-center gap-4 py-2">
-              <img :src="item.vinyl?.cover_image || '/placeholder.svg'" :alt="item.vinyl?.title" class="w-12 h-12 rounded object-cover">
-              <div class="flex-1">
-                <p class="font-medium text-stone-900">{{ item.vinyl?.title }}</p>
-                <p class="text-sm text-stone-500">{{ item.vinyl?.artist }}</p>
+          <!-- Resumo dos itens -->
+          <div class="flex items-center gap-3 mb-4">
+            <div class="flex -space-x-2">
+              <div 
+                v-for="(item, idx) in order.items?.slice(0, 4)" 
+                :key="item.id"
+                class="w-10 h-10 rounded-lg overflow-hidden border-2 border-white bg-stone-100"
+                :style="{ zIndex: 4 - Number(idx) }"
+              >
+                <img 
+                  :src="item.cover_image || '/placeholder.svg'" 
+                  :alt="item.title"
+                  class="w-full h-full object-cover"
+                  @error="($event.target as HTMLImageElement).src = '/placeholder.svg'"
+                />
               </div>
-              <p class="font-medium">{{ item.formatted_price }}</p>
+              <div 
+                v-if="order.items_count > 4" 
+                class="w-10 h-10 rounded-lg bg-stone-200 border-2 border-white flex items-center justify-center text-xs font-medium text-stone-600"
+              >
+                +{{ order.items_count - 4 }}
+              </div>
             </div>
+            <span class="text-sm text-stone-500">
+              {{ order.items_count }} {{ order.items_count === 1 ? 'item' : 'itens' }}
+            </span>
           </div>
 
-          <div class="border-t pt-4 mt-4 flex justify-between items-center">
-            <span class="text-stone-500">Total</span>
-            <span class="text-xl font-bold text-stone-900">{{ order.formatted_total }}</span>
+          <div class="flex justify-between items-center pt-4 border-t border-stone-100">
+            <div class="text-sm text-stone-500">
+              <span v-if="order.shipping_method">{{ order.shipping_method }}</span>
+              <span v-if="order.tracking_code" class="ml-2 text-yellow-600">
+                Rastreio: {{ order.tracking_code }}
+              </span>
+            </div>
+            <span class="text-lg font-bold text-stone-900">{{ order.formatted_total }}</span>
           </div>
-        </div>
+        </NuxtLink>
       </div>
     </div>
   </div>
