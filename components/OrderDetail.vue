@@ -50,6 +50,12 @@
             </div>
             <h1 class="text-2xl font-bold text-stone-900">Aguardando Pagamento</h1>
             <p class="text-stone-600 mt-2">Seu pedido foi registrado e está aguardando confirmação do pagamento.</p>
+            <NuxtLink v-if="canPayPix" :to="`/pedido/${order.order_number}/pagamento`" class="mt-4 inline-block bg-yellow-400 text-stone-900 px-6 py-3 rounded-lg font-semibold hover:bg-yellow-300">
+              Pagar com PIX agora
+            </NuxtLink>
+            <a v-else-if="checkoutUrl" :href="checkoutUrl" class="mt-4 inline-block bg-yellow-400 text-stone-900 px-6 py-3 rounded-lg font-semibold hover:bg-yellow-300">
+              Concluir pagamento
+            </a>
           </template>
 
           <!-- Cancelado -->
@@ -218,7 +224,6 @@ import { useCartStore } from '~/stores/cart'
 
 const props = defineProps<{
   orderNumber: string
-  statusBanner?: string
 }>()
 
 const emit = defineEmits<{
@@ -233,17 +238,13 @@ const loading = ref(true)
 const error = ref(false)
 const order = ref<any>(null)
 
-const isPaid = computed(() => {
-  return props.statusBanner === 'sucesso' || ['paid', 'processing', 'shipped', 'delivered'].includes(order.value?.status)
-})
+// Status sempre vem da API — nunca da URL
+const isPaid = computed(() => ['paid', 'processing', 'shipped', 'delivered'].includes(order.value?.status))
+const isPending = computed(() => order.value?.status === 'pending')
+const isCancelled = computed(() => order.value?.status === 'cancelled')
 
-const isPending = computed(() => {
-  return props.statusBanner === 'pendente' || order.value?.status === 'pending'
-})
-
-const isCancelled = computed(() => {
-  return props.statusBanner === 'cancelado' || order.value?.status === 'cancelled'
-})
+const canPayPix = computed(() => isPending.value && order.value?.payment?.method === 'pix' && !order.value?.payment?.pix_expired)
+const checkoutUrl = computed(() => (isPending.value ? order.value?.payment?.checkout_url : null) as string | null)
 
 const fetchOrder = async () => {
   loading.value = true
@@ -340,7 +341,10 @@ const getPaymentMethodLabel = (method: string) => {
     'mercado_pago': 'Mercado Pago',
     'whatsapp': 'WhatsApp',
     'credit_card': 'Cartão de Crédito',
-    'boleto': 'Boleto'
+    'debit_card': 'Cartão de Débito',
+    'boleto': 'Boleto',
+    'ticket': 'Boleto',
+    'account_money': 'Saldo Mercado Pago'
   }
   return labels[method] || method
 }

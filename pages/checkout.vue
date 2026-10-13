@@ -18,6 +18,7 @@ useHead({
 // Estados
 const loading = ref(true)
 const submitting = ref(false)
+const redirecting = ref(false)
 const loadingShipping = ref(false)
 const searchingCep = ref(false)
 const savingAddress = ref(false)
@@ -43,13 +44,6 @@ const selectedShippingId = ref<string | null>(null)
 
 const paymentMethod = ref('pix')
 const customerNotes = ref('')
-
-// Modal PIX
-const showPixModal = ref(false)
-const pixData = ref<any>({})
-const orderNumber = ref('')
-const pixCopied = ref(false)
-const simulatingPayment = ref(false)
 
 // Modal WhatsApp
 const showWhatsAppModal = ref(false)
@@ -211,62 +205,24 @@ const submitOrder = async () => {
     })
 
     const orderData = response.data
-    orderNumber.value = orderData.order_number
+    // Evita exibir "carrinho vazio" enquanto sai do checkout
+    redirecting.value = true
+    cartStore.clearCart()
 
-    if (paymentMethod.value === 'pix' && orderData.payment) {
-      pixData.value = orderData.payment
-      showPixModal.value = true
-      cartStore.clearCart()
-    } else if (paymentMethod.value === 'checkout_pro' && orderData.payment?.init_point) {
-      cartStore.clearCart()
+    if (paymentMethod.value === 'checkout_pro' && orderData.payment?.init_point) {
+      // Mantém "submitting" ativo até o navegador sair da página
       window.location.href = orderData.payment.init_point
+      return
     }
+
+    // PIX: página dedicada (replace evita voltar para um checkout vazio)
+    await router.replace(`/pedido/${orderData.order_number}/pagamento`)
+    return
   } catch (err: any) {
     console.error('Erro ao criar pedido:', err)
     error.value = err?.data?.error || err?.data?.message || 'Erro ao processar pedido. Tente novamente.'
-  } finally {
-    submitting.value = false
   }
-}
-
-const copyPixCode = async () => {
-  try {
-    await navigator.clipboard.writeText(pixData.value.qr_code)
-    pixCopied.value = true
-    setTimeout(() => pixCopied.value = false, 2000)
-  } catch (err) {
-    console.error('Erro ao copiar:', err)
-  }
-}
-
-const goToPendingPage = () => {
-  showPixModal.value = false
-  router.push(`/pedido/${orderNumber.value}/pendente`)
-}
-
-const goToHome = () => {
-  showPixModal.value = false
-  router.push('/')
-}
-
-const simulatePayment = async () => {
-  simulatingPayment.value = true
-  try {
-    const response = await $fetch<{ data: any }>(`/orders/${orderNumber.value}/simulate-payment`, {
-      baseURL: config.public.apiBase,
-      method: 'POST',
-      headers: { Authorization: `Bearer ${authStore.token}` }
-    })
-    if (response.data.payment_status === 'approved') {
-      showPixModal.value = false
-      router.push(`/pedido/${orderNumber.value}/sucesso`)
-    }
-  } catch (err: any) {
-    console.error('Erro ao simular pagamento:', err)
-    error.value = 'Erro ao simular pagamento: ' + (err?.data?.error || err.message)
-  } finally {
-    simulatingPayment.value = false
-  }
+  submitting.value = false
 }
 
 // Finalizar no WhatsApp
@@ -377,8 +333,11 @@ onMounted(async () => {
 
     <div class="max-w-4xl mx-auto px-4 py-8">
       <!-- Loading -->
-      <div v-if="loading" class="flex justify-center py-12">
+      <div v-if="loading || redirecting" class="flex flex-col items-center py-12">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500"></div>
+        <p v-if="redirecting" class="text-stone-600 mt-4">
+          {{ paymentMethod === 'checkout_pro' ? 'Redirecionando para o Mercado Pago...' : 'Gerando seu PIX...' }}
+        </p>
       </div>
 
       <!-- Carrinho Vazio -->
@@ -714,86 +673,6 @@ onMounted(async () => {
         </div>
       </div>
     </div>
-
-    <!-- Modal PIX -->
-    <Teleport to="body">
-      <div v-if="showPixModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-          <!-- Header -->
-          <div class="text-center mb-6">
-            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
-            </div>
-            <h3 class="text-xl font-bold text-stone-900">Pedido Criado!</h3>
-            <p class="text-sm text-stone-600 mt-1">Pedido <strong>#{{ orderNumber }}</strong></p>
-          </div>
-
-          <!-- QR Code -->
-          <div class="text-center">
-            <p class="text-sm font-medium text-stone-700 mb-3">Escaneie o QR Code para pagar:</p>
-            <div class="bg-white border-2 border-stone-200 rounded-xl p-4 inline-block mb-4">
-              <img v-if="pixData.qr_code_base64" :src="'data:image/png;base64,' + pixData.qr_code_base64" alt="QR Code PIX" class="w-48 h-48">
-            </div>
-            
-            <!-- Código PIX -->
-            <p class="text-xs text-stone-500 mb-2">Ou copie o código PIX:</p>
-            <div class="bg-stone-100 p-3 rounded-lg mb-4 max-h-20 overflow-y-auto">
-              <p class="text-xs text-stone-700 break-all font-mono select-all">{{ pixData.qr_code }}</p>
-            </div>
-            
-            <button
-              @click="copyPixCode"
-              class="w-full bg-yellow-400 text-stone-900 py-3 rounded-lg font-semibold hover:bg-yellow-300 transition-colors flex items-center justify-center gap-2"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
-              </svg>
-              {{ pixCopied ? 'Copiado!' : 'Copiar Código PIX' }}
-            </button>
-            
-            <!-- Timer -->
-            <div class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-              <p class="text-xs text-amber-800">
-                <strong>Atenção:</strong> O código PIX expira em 30 minutos. 
-                Após o pagamento, você receberá a confirmação por e-mail.
-              </p>
-            </div>
-          </div>
-
-          <!-- Botões -->
-          <div class="mt-6 space-y-2">
-            <!-- Botão de simular pagamento (apenas sandbox) -->
-            <button 
-              v-if="pixData.is_sandbox"
-              @click="simulatePayment"
-              :disabled="simulatingPayment"
-              class="w-full bg-green-500 text-white py-3 rounded-lg font-semibold hover:bg-green-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              <svg v-if="simulatingPayment" class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-              </svg>
-              {{ simulatingPayment ? 'Processando...' : 'Simular Pagamento (Sandbox)' }}
-            </button>
-            
-            <button 
-              @click="goToPendingPage" 
-              class="w-full bg-stone-100 text-stone-700 py-3 rounded-lg font-medium hover:bg-stone-200 transition-colors"
-            >
-              Acompanhar Pedido
-            </button>
-            <button 
-              @click="goToHome" 
-              class="w-full text-stone-500 hover:text-stone-700 py-2 text-sm transition-colors"
-            >
-              Voltar para o Site
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
 
     <!-- Modal WhatsApp -->
     <Teleport to="body">
