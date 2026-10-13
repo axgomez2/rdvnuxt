@@ -159,17 +159,17 @@
 
             <!-- Estoque -->
             <div class="flex items-center gap-2">
-              <span v-if="vinyl.in_stock" class="flex items-center gap-1 text-green-600">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                </svg>
-                Em estoque
-              </span>
-              <span v-else-if="vinyl.is_preorder" class="flex items-center gap-1 text-purple-600">
+              <span v-if="vinyl.is_preorder" class="flex items-center gap-1 text-purple-600">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
                 Disponível para reserva
+              </span>
+              <span v-else-if="vinyl.in_stock" class="flex items-center gap-1 text-green-600">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </svg>
+                Em estoque
               </span>
               <span v-else class="flex items-center gap-1 text-stone-500">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -226,7 +226,8 @@
             <!-- Comprar pelo WhatsApp -->
             <button
               @click="buyOnWhatsApp"
-              class="w-full flex items-center justify-center gap-3 py-4 rounded-xl font-semibold text-lg bg-green-600 text-white hover:bg-green-500 transition-colors"
+              :disabled="vinyl.is_preorder || !vinyl.in_stock"
+              class="w-full flex items-center justify-center gap-3 py-4 rounded-xl font-semibold text-lg bg-green-600 text-white hover:bg-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-green-600"
             >
               <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm5.56-2.107c-.3-.15-1.767-.872-2.04-.972-.273-.099-.472-.148-.67.15-.198.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.3-.15-1.263-.465-2.403-1.485-.888-.795-1.484-1.77-1.66-2.07-.174-.297-.019-.458.13-.606.134-.133.3-.347.448-.52.149-.174.198-.298.298-.497.099-.198.05-.372-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.372-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
