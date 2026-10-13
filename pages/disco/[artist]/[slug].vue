@@ -739,14 +739,18 @@ const playTrack = (track: Track) => {
   }
 }
 
-// Número do WhatsApp da loja
-const WHATSAPP_NUMBER = '5511947159293'
+// Número do WhatsApp da loja (configurado no admin, com fallback)
+const whatsappNumber = computed(() => {
+  let phone = (siteSettingsStore.whatsappNumber || '5511947159293').replace(/\D/g, '')
+  if (phone.length >= 10 && !phone.startsWith('55')) phone = `55${phone}`
+  return phone
+})
 
 // Comprar pelo WhatsApp (direto para a loja)
 const buyOnWhatsApp = () => {
   if (!vinyl.value) return
   const text = `Olá! Tenho interesse no disco:\n\n🎵 *${vinyl.value.artist} - ${vinyl.value.title}*\n💰 ${formattedPrice.value}\n🔗 ${window.location.href}\n\nGostaria de mais informações para compra.`
-  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`, '_blank')
+  window.open(`https://wa.me/${whatsappNumber.value}?text=${encodeURIComponent(text)}`, '_blank')
 }
 
 // Compartilhar no WhatsApp

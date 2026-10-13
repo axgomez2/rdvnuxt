@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useCartStore } from '~/stores/cart'
 import { useAuthStore } from '~/stores/auth'
+import { useSiteSettingsStore } from '~/stores/siteSettings'
 
 definePageMeta({
   middleware: 'auth'
@@ -8,6 +9,7 @@ definePageMeta({
 
 const cartStore = useCartStore()
 const authStore = useAuthStore()
+const siteSettings = useSiteSettingsStore()
 const config = useRuntimeConfig()
 const router = useRouter()
 
@@ -262,7 +264,9 @@ const submitWhatsAppOrder = async () => {
 }
 
 const openWhatsApp = () => {
-  const phone = '5511947159293'
+  // Número configurado no admin (site_whatsapp / footer_whatsapp), com fallback
+  let phone = (siteSettings.whatsappNumber || '5511947159293').replace(/\D/g, '')
+  if (phone.length >= 10 && !phone.startsWith('55')) phone = `55${phone}`
   const message = encodeURIComponent(
     `Olá! Acabei de fazer o pedido #${whatsAppOrderNumber.value} no site e gostaria de combinar o pagamento.\n\n` +
     `Total: ${formatPrice(total.value)}\n` +
@@ -273,7 +277,7 @@ const openWhatsApp = () => {
 
 const closeWhatsAppModal = () => {
   showWhatsAppModal.value = false
-  router.push('/')
+  router.push(`/pedido/${whatsAppOrderNumber.value}`)
 }
 
 const checkRequirements = async () => {
@@ -311,10 +315,11 @@ onMounted(async () => {
   const canProceed = await checkRequirements()
   if (!canProceed) return
   
-  // Buscar carrinho e endereços
+  // Buscar carrinho, endereços e configurações (WhatsApp da loja)
   await Promise.all([
     cartStore.fetchCart(),
-    fetchAddresses()
+    fetchAddresses(),
+    siteSettings.fetchSettings()
   ])
   
   loading.value = false
@@ -715,14 +720,12 @@ onMounted(async () => {
               @click="closeWhatsAppModal" 
               class="w-full bg-stone-100 text-stone-700 py-3 rounded-lg font-medium hover:bg-stone-200 transition-colors"
             >
-              Voltar para o Site
+              Ver meu pedido
             </button>
+            <NuxtLink to="/" class="block text-center text-stone-500 hover:text-stone-700 py-2 text-sm transition-colors">
+              Voltar para a loja
+            </NuxtLink>
           </div>
-
-          <!-- Info -->
-          <p class="text-xs text-stone-500 text-center mt-4">
-            Você também pode acompanhar seu pedido na área "Meus Pedidos"
-          </p>
         </div>
       </div>
     </Teleport>

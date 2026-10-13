@@ -12,6 +12,16 @@ interface SiteSettings {
   email?: string
   address?: string
   phone?: string
+  // Chaves como a API realmente devolve (site_settings.key)
+  site_name?: string
+  logo_white?: string
+  site_whatsapp?: string
+  footer_whatsapp?: string
+  footer_email?: string
+  footer_address?: string
+  footer_phone?: string
+  social_instagram?: string
+  social_facebook?: string
 }
 
 export const useSiteSettingsStore = defineStore('siteSettings', () => {
@@ -31,9 +41,11 @@ export const useSiteSettingsStore = defineStore('siteSettings', () => {
   const loading = ref(false)
   const loaded = ref(false)
 
-  const siteName = computed(() => settings.value.siteName)
+  // A API devolve chaves snake_case (site_name, logo_white, footer_whatsapp)
+  const siteName = computed(() => settings.value.site_name || settings.value.siteName)
   const logo = computed(() => settings.value.logo)
-  const logoWhite = computed(() => settings.value.logoWhite)
+  const logoWhite = computed(() => settings.value.logo_white || settings.value.logoWhite)
+  const whatsappNumber = computed(() => settings.value.site_whatsapp || settings.value.footer_whatsapp || '')
 
   const fetchSettings = async () => {
     if (loaded.value) return
@@ -61,6 +73,7 @@ export const useSiteSettingsStore = defineStore('siteSettings', () => {
     siteName,
     logo,
     logoWhite,
+    whatsappNumber,
     fetchSettings
   }
 })
