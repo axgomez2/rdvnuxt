@@ -303,8 +303,8 @@ const formatDate = (dateString: string) => {
   })
 }
 
-const formatPrice = (value: number) => {
-  return (value || 0).toFixed(2).replace('.', ',')
+const formatPrice = (value: number | string) => {
+  return Number(value || 0).toFixed(2).replace('.', ',')
 }
 
 const getStatusLabel = (status: string) => {
