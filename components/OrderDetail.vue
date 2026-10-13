@@ -262,7 +262,8 @@ const fetchOrder = async () => {
     }
     
     if (!authStore.token) {
-      error.value = true
+      // Sem token → redirecionar para login e voltar aqui depois
+      navigateTo(`/login?redirect=/pedido/${props.orderNumber}`)
       return
     }
     
@@ -280,6 +281,11 @@ const fetchOrder = async () => {
     }
   } catch (err: any) {
     console.error('Erro ao carregar pedido:', err)
+    // Token expirado/inválido → redirecionar para login
+    if (err?.status === 401 || err?.response?.status === 401) {
+      navigateTo(`/login?redirect=/pedido/${props.orderNumber}`)
+      return
+    }
     error.value = true
   } finally {
     loading.value = false
