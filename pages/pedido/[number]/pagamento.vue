@@ -120,6 +120,15 @@ onMounted(async () => {
 
   try {
     pix.value = await api.fetchPix()
+    
+    // Debug temporário
+    console.log('PIX Response:', {
+      expiration: pix.value.expiration,
+      server_time: pix.value.server_time,
+      is_expired: pix.value.is_expired,
+      qr_code: pix.value.qr_code ? 'presente' : 'ausente'
+    })
+    
     if (pix.value.server_time) clockOffset.value = new Date(pix.value.server_time).getTime() - Date.now()
     if (handleStatus(pix.value)) return
 
