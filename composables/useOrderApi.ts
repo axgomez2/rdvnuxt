@@ -39,11 +39,12 @@ export const useOrderApi = (orderNumber: Ref<string> | string) => {
 
   const request = async <T>(path: string, options: Record<string, any> = {}): Promise<T> => {
     try {
-      return await $fetch<T>(path, {
+      const result = await $fetch<T>(path, {
         baseURL: config.public.apiBase,
         headers: { Authorization: `Bearer ${authStore.token}` },
         ...options,
       })
+      return result as T
     } catch (err: any) {
       if (err?.status === 401 || err?.response?.status === 401) redirectToLogin()
       throw err

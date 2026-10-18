@@ -18,10 +18,11 @@
 </template>
 
 <script setup lang="ts">
-useHead({
-  title: 'Ofertas - RDV Discos',
-  meta: [
-    { name: 'description', content: 'Ofertas especiais de discos de vinil. Aproveite os melhores preços.' }
-  ]
+const { setListingSeo } = useSeo()
+
+setListingSeo({
+  title: 'Ofertas',
+  description: 'Ofertas especiais de discos de vinil com até 50% de desconto. Aproveite os melhores preços em vinil novo e usado.',
+  url: '/ofertas',
 })
 </script>

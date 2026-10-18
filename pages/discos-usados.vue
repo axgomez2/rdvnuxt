@@ -281,13 +281,21 @@ onMounted(async () => {
   restoreScrollPosition()
 })
 
-useHead({
-  title: computed(() => {
-    const cat = categories.value.find(c => c.slug === selectedCategory.value)
-    return cat ? `${cat.name} - Discos Usados - RDV Discos` : 'Discos Usados - RDV Discos'
-  }),
-  meta: [
-    { name: 'description', content: 'Discos de vinil usados com qualidade garantida. Raridades e clássicos para colecionadores.' }
-  ]
-})
+// SEO dinâmico
+const { setListingSeo } = useSeo()
+
+watch([() => categories.value, () => selectedCategory.value, () => pagination.value.total], () => {
+  const cat = categories.value.find(c => c.slug === selectedCategory.value)
+  const title = cat ? `${cat.name} - Discos Usados` : 'Discos Usados'
+  const description = cat 
+    ? `Discos de vinil usados de ${cat.name}. ${pagination.value.total} títulos disponíveis. Raridades e clássicos para colecionadores.`
+    : `Discos de vinil usados com qualidade garantida. ${pagination.value.total} títulos disponíveis. Raridades e clássicos para colecionadores e DJs.`
+  
+  setListingSeo({
+    title,
+    description,
+    url: '/discos-usados' + (selectedCategory.value ? `?category=${selectedCategory.value}` : ''),
+    totalItems: pagination.value.total,
+  })
+}, { immediate: true })
 </script>

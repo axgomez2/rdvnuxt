@@ -800,14 +800,47 @@ onMounted(() => {
   siteSettingsStore.fetchSettings()
 })
 
-useHead({
-  title: computed(() => vinyl.value
-    ? `${vinyl.value.artist} - ${vinyl.value.title} | RDV Discos`
-    : 'Disco - RDV Discos'),
-  meta: [
-    { name: 'description', content: computed(() => vinyl.value
-      ? `${vinyl.value.artist} - ${vinyl.value.title}. ${vinyl.value.condition || ''} ${formattedPrice.value}`
-      : 'Detalhes do disco de vinil.') }
-  ]
-})
+// SEO dinâmico com Schema.org
+const { setProductSeo } = useSeo()
+
+watch(vinyl, (v) => {
+  if (!v) return
+  
+  // Determinar disponibilidade
+  let availability: 'InStock' | 'OutOfStock' | 'PreOrder' = 'OutOfStock'
+  if (v.is_preorder) {
+    availability = 'PreOrder'
+  } else if (v.in_stock) {
+    availability = 'InStock'
+  }
+  
+  // Determinar condição
+  const condition = v.is_new ? 'NewCondition' : 'UsedCondition'
+  
+  // Descrição rica para SEO
+  const description = [
+    v.description,
+    v.record_label ? `Selo: ${v.record_label}.` : '',
+    v.release_year ? `Ano: ${v.release_year}.` : '',
+    v.country ? `País: ${v.country}.` : '',
+    v.condition ? `Condição: ${v.condition}.` : '',
+    availability === 'InStock' ? 'Em estoque, envio imediato para todo Brasil.' : '',
+    availability === 'PreOrder' ? 'Disponível para pré-venda.' : '',
+  ].filter(Boolean).join(' ')
+  
+  setProductSeo({
+    name: v.title,
+    description: description || `Disco de vinil ${v.title} de ${v.artist}`,
+    image: coverImage.value,
+    price: v.price || 0,
+    currency: 'BRL',
+    availability,
+    sku: `RDV-${v.id}`,
+    brand: v.record_label || undefined,
+    artist: v.artist,
+    releaseYear: v.release_year?.toString(),
+    condition,
+    url: route.fullPath,
+  })
+}, { immediate: true })
 </script>

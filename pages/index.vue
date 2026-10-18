@@ -70,10 +70,12 @@ onMounted(() => {
   homeSections.fetch()
 })
 
-useHead({
+// SEO otimizado para home
+const { setPageSeo } = useSeo()
+
+setPageSeo({
   title: 'RDV Discos - Loja de Discos de Vinil',
-  meta: [
-    { name: 'description', content: 'A melhor seleção de discos de vinil para DJs e colecionadores. Discos novos, usados, nacionais e importados.' }
-  ]
+  description: 'A melhor seleção de discos de vinil para DJs e colecionadores. Discos novos, usados, nacionais e importados. Entrega para todo Brasil com frete calculado.',
+  type: 'website',
 })
 </script>

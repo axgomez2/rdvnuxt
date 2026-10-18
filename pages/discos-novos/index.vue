@@ -302,13 +302,21 @@ onMounted(async () => {
   restoreScrollPosition()
 })
 
-useHead({
-  title: computed(() => {
-    const cat = categories.value.find(c => c.slug === selectedCategory.value)
-    return cat ? `${cat.name} - Discos Novos - RDV Discos` : 'Discos Novos - RDV Discos'
-  }),
-  meta: [
-    { name: 'description', content: 'Discos de vinil novos, lançamentos e novidades. Importados e nacionais.' }
-  ]
-})
+// SEO dinâmico
+const { setListingSeo } = useSeo()
+
+watch([() => categories.value, () => selectedCategory.value, () => pagination.value.total], () => {
+  const cat = categories.value.find(c => c.slug === selectedCategory.value)
+  const title = cat ? `${cat.name} - Discos Novos` : 'Discos Novos'
+  const description = cat 
+    ? `Discos de vinil novos de ${cat.name}. ${pagination.value.total} títulos disponíveis. Lançamentos e novidades em vinil importado e nacional.`
+    : `Discos de vinil novos, lançamentos e novidades. ${pagination.value.total} títulos disponíveis. Importados e nacionais com envio para todo Brasil.`
+  
+  setListingSeo({
+    title,
+    description,
+    url: '/discos-novos' + (selectedCategory.value ? `?category=${selectedCategory.value}` : ''),
+    totalItems: pagination.value.total,
+  })
+}, { immediate: true })
 </script>
