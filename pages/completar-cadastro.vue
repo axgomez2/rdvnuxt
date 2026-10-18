@@ -68,7 +68,7 @@ const saveProfile = async () => {
   error.value = null
   
   try {
-    await $fetch('/profile', {
+    await $fetch('/auth/profile', {
       baseURL: config.public.apiBase,
       method: 'PUT',
       headers: { Authorization: `Bearer ${authStore.token}` },
