@@ -36,7 +36,7 @@ const profile = ref({
 // Endereço
 const address = ref({
   label: 'Casa',
-  zipcode: '',
+  zip_code: '',
   street: '',
   number: '',
   complement: '',
@@ -90,7 +90,7 @@ const checkRequirements = async () => {
 }
 
 const searchCep = async () => {
-  const cep = address.value.zipcode.replace(/\D/g, '')
+  const cep = address.value.zip_code.replace(/\D/g, '')
   if (cep.length !== 8) return
   
   loadingCep.value = true
@@ -137,8 +137,15 @@ const saveAll = async () => {
         method: 'POST',
         headers: { Authorization: `Bearer ${authStore.token}` },
         body: {
-          ...address.value,
-          zipcode: address.value.zipcode.replace(/\D/g, '')
+          label: address.value.label,
+          street: address.value.street,
+          number: address.value.number,
+          complement: address.value.complement || null,
+          neighborhood: address.value.neighborhood,
+          city: address.value.city,
+          state: address.value.state,
+          zip_code: address.value.zip_code.replace(/\D/g, ''),
+          is_default: address.value.is_default
         }
       })
     }
@@ -194,7 +201,7 @@ const formatCep = (value: string) => {
 
 const handleCepInput = (e: Event) => {
   const input = e.target as HTMLInputElement
-  address.value.zipcode = formatCep(input.value)
+  address.value.zip_code = formatCep(input.value)
   if (input.value.replace(/\D/g, '').length === 8) {
     searchCep()
   }
@@ -329,7 +336,7 @@ onMounted(() => {
                   <label class="block text-sm font-medium text-stone-700 mb-1">CEP</label>
                   <div class="relative">
                     <input
-                      :value="address.zipcode"
+                      :value="address.zip_code"
                       @input="handleCepInput"
                       type="text"
                       required
