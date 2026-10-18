@@ -18,7 +18,7 @@ const saving = ref(false)
 const error = ref<string | null>(null)
 const success = ref(false)
 
-const requirements = ref<{ can_proceed: boolean; missing: string[] }>({
+const requirements = ref<{ can_proceed: boolean; missing: string[]; user?: any }>({
   can_proceed: true,
   missing: []
 })
@@ -37,7 +37,11 @@ const checkRequirements = async () => {
       headers: { Authorization: `Bearer ${authStore.token}` }
     })
     
-    requirements.value = response
+    requirements.value = {
+      can_proceed: response.can_proceed ?? false,
+      missing: response.missing ?? [],
+      user: response.user
+    }
     
     // Preencher dados existentes
     if (response.user) {
@@ -53,6 +57,7 @@ const checkRequirements = async () => {
     }
   } catch (err) {
     console.error('Erro ao verificar requisitos:', err)
+    error.value = 'Erro ao carregar dados. Tente novamente.'
   } finally {
     loading.value = false
   }
@@ -142,7 +147,7 @@ onMounted(() => {
         <!-- Form -->
         <div class="p-6">
           <!-- Campos faltantes -->
-          <div v-if="requirements.missing.length > 0" class="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <div v-if="requirements.missing && requirements.missing.length > 0" class="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
             <p class="text-sm text-amber-800 font-medium mb-2">Dados necessários:</p>
             <ul class="text-sm text-amber-700 list-disc list-inside">
               <li v-for="field in requirements.missing" :key="field">{{ field }}</li>
