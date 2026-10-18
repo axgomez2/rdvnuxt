@@ -19,9 +19,9 @@ const error = ref<string | null>(null)
 const success = ref(false)
 const loadingCep = ref(false)
 
-const requirements = ref<{ can_proceed: boolean; missing: string[]; user?: any; has_address?: boolean }>({
+const requirements = ref<{ can_proceed: boolean; missing_fields: string[]; user?: any; has_address?: boolean }>({
   can_proceed: true,
-  missing: [],
+  missing_fields: [],
   has_address: false
 })
 
@@ -47,12 +47,8 @@ const address = ref({
 })
 
 const needsProfile = computed(() => {
-  const missing = requirements.value.missing || []
-  return missing.some(m => 
-    m.toLowerCase().includes('cpf') || 
-    m.toLowerCase().includes('telefone') ||
-    m.toLowerCase().includes('nome')
-  )
+  const missing = requirements.value.missing_fields || []
+  return missing.includes('cpf') || missing.includes('phone') || missing.includes('name')
 })
 
 const needsAddress = computed(() => {
@@ -61,14 +57,14 @@ const needsAddress = computed(() => {
 
 const checkRequirements = async () => {
   try {
-    const response = await $fetch<{ can_proceed: boolean; missing: string[]; user: any; has_address: boolean }>('/checkout/requirements', {
+    const response = await $fetch<{ can_proceed: boolean; missing_fields: string[]; user: any; has_address: boolean }>('/checkout/requirements', {
       baseURL: config.public.apiBase,
       headers: { Authorization: `Bearer ${authStore.token}` }
     })
     
     requirements.value = {
       can_proceed: response.can_proceed ?? false,
-      missing: response.missing ?? [],
+      missing_fields: response.missing_fields ?? [],
       user: response.user,
       has_address: response.has_address ?? false
     }
@@ -238,10 +234,13 @@ onMounted(() => {
         <!-- Form -->
         <div class="p-6">
           <!-- Campos faltantes -->
-          <div v-if="requirements.missing && requirements.missing.length > 0" class="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <div v-if="(requirements.missing_fields && requirements.missing_fields.length > 0) || !requirements.has_address" class="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
             <p class="text-sm text-amber-800 font-medium mb-2">Dados necessários:</p>
             <ul class="text-sm text-amber-700 list-disc list-inside">
-              <li v-for="field in requirements.missing" :key="field">{{ field }}</li>
+              <li v-if="requirements.missing_fields?.includes('name')">Nome completo</li>
+              <li v-if="requirements.missing_fields?.includes('cpf')">CPF</li>
+              <li v-if="requirements.missing_fields?.includes('phone')">Telefone</li>
+              <li v-if="!requirements.has_address">Endereço de entrega</li>
             </ul>
           </div>
 
