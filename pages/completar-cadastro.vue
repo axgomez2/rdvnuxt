@@ -68,11 +68,18 @@ const saveProfile = async () => {
   error.value = null
   
   try {
+    // Enviar apenas campos preenchidos
+    const body: Record<string, string> = {}
+    if (form.value.name) body.name = form.value.name
+    if (form.value.cpf) body.cpf = form.value.cpf
+    if (form.value.phone) body.phone = form.value.phone
+    if (form.value.birth_date) body.birth_date = form.value.birth_date
+
     await $fetch('/auth/profile', {
       baseURL: config.public.apiBase,
       method: 'PUT',
       headers: { Authorization: `Bearer ${authStore.token}` },
-      body: form.value
+      body
     })
     
     success.value = true
@@ -80,10 +87,8 @@ const saveProfile = async () => {
     // Atualizar dados do usuário no store
     await authStore.fetchUser()
     
-    // Redirecionar para checkout após 1 segundo
-    setTimeout(() => {
-      router.push('/checkout')
-    }, 1000)
+    // Redirecionar para checkout imediatamente
+    router.push('/checkout')
   } catch (err: any) {
     console.error('Erro ao salvar perfil:', err)
     error.value = err?.data?.message || 'Erro ao salvar dados. Verifique as informações.'
@@ -208,13 +213,15 @@ onMounted(() => {
               >
             </div>
 
-            <!-- Data de Nascimento -->
+            <!-- Data de Nascimento (opcional) -->
             <div>
-              <label class="block text-sm font-medium text-stone-700 mb-1">Data de Nascimento</label>
+              <label class="block text-sm font-medium text-stone-700 mb-1">
+                Data de Nascimento
+                <span class="text-stone-400 font-normal">(opcional)</span>
+              </label>
               <input
                 v-model="form.birth_date"
                 type="date"
-                required
                 class="w-full rounded-lg border-stone-300 focus:border-yellow-400 focus:ring-yellow-400"
               >
             </div>
